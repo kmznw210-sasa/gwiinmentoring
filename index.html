@@ -103,4 +103,65 @@
 
                 return `
                     <div class="bg-white p-5 rounded-xl shadow-xs border border-gray-200 hover:border-blue-300 transition duration-150">
-                        <div class="flex justify-between items-start gap-4 mb-3
+                        <div class="flex justify-between items-start gap-4 mb-3">
+                            <span class="text-xs text-gray-400 font-mono">${date}</span>
+                        </div>
+                        <p class="text-gray-800 text-base font-medium whitespace-pre-wrap">${escapeHtml(q.content)}</p>
+                        ${answerHTML}
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // 4. 새 질문 등록하기 (Insert - 오직 content 컬럼만 전송)
+        questionForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const content = document.getElementById('content').value.trim();
+
+            try {
+                // title 제거하고 content만 테이블에 넣도록 수정했습니다.
+                const { error } = await supabaseClient
+                    .from('questions')
+                    .insert([{ content }]);
+
+                if (error) throw error;
+                questionForm.reset();
+            } catch (error) {
+                alert('질문 등록에 실패했습니다: ' + error.message);
+                console.error(error);
+            }
+        });
+
+        // XSS 방지를 위한 텍스트 이스케이프 함수
+        function escapeHtml(text) {
+            if (!text) return '';
+            return text
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
+        // 5. Supabase 실시간 감지 구독 설정 (Realtime)
+        function subscribeRealtime() {
+            supabaseClient
+                .channel('schema-db-changes')
+                .on(
+                    'postgres_changes',
+                    { event: '*', schema: 'public', table: 'questions' },
+                    (payload) => {
+                        console.log('DB 변경 감지됨:', payload);
+                        fetchQuestions();
+                    }
+                )
+                .subscribe();
+        }
+
+        // 초기 구동
+        fetchQuestions();
+        subscribeRealtime();
+    </script>
+</body>
+</html>
