@@ -3,50 +3,86 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>멘토링 Q&A 방명록</title>
+    <title>멘토링 Q&A 및 발표자료 공간</title>
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" />
+    <style>
+        body { font-family: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, "Helvetica Neue", "Segoe UI", "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", sans-serif; }
+    </style>
 </head>
 <body class="bg-gray-50 text-gray-800 min-h-screen flex flex-col justify-between">
 
-    <header class="bg-white shadow-sm border-b border-gray-200">
-        <div class="max-w-4xl mx-auto px-4 py-6">
-            <h1 class="text-2xl font-bold text-blue-600 flex items-center gap-2">
-                🚀 멘토링 질의응답방
-            </h1>
-            <p class="text-sm text-gray-500 mt-1">멘토에게 궁금한 점을 자유롭게 질문해 보세요! (실시간으로 업데이트됩니다)</p>
+    <header class="bg-white shadow-xs border-b border-gray-200 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 py-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div>
+                <h1 class="text-xl font-bold text-blue-600 flex items-center gap-2">
+                    🚀 멘토링 LIVE 스페이스
+                </h1>
+                <p class="text-xs text-gray-500 mt-0.5">발표자료 확인과 실시간 질의응답을 한곳에서 진행하세요.</p>
+            </div>
+            
+            <div class="bg-gray-100 p-2 rounded-lg border border-gray-200 flex items-center gap-2 w-full sm:w-auto">
+                <span class="text-xs font-semibold text-gray-500 shrink-0">📄 발표자료 PDF 링크:</span>
+                <input type="text" id="pdfUrlInput" placeholder="공유된 PDF 주소 입력" 
+                       class="bg-white border border-gray-300 text-xs rounded px-2 py-1 w-full sm:w-64 focus:outline-blue-500">
+                <button id="updatePdfBtn" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium px-2 py-1 rounded shrink-0 cursor-pointer transition">
+                    동기화
+                </button>
+            </div>
         </div>
     </header>
 
-    <main class="max-w-4xl mx-auto px-4 py-8 flex-1 w-full">
+    <main class="max-w-7xl mx-auto px-4 py-6 flex-1 w-full grid grid-cols-1 lg:grid-cols-12 gap-6">
         
-        <section class="bg-white p-6 rounded-xl shadow-xs border border-gray-200 mb-8">
-            <h2 class="text-lg font-semibold mb-4 text-gray-700">🙋‍♂️ 새로운 질문 남기기</h2>
-            <form id="questionForm" class="space-y-4">
-                <div>
-                    <label for="content" class="block text-sm font-medium text-gray-600 mb-1">질문 내용</label>
-                    <textarea id="content" required rows="4" placeholder="멘토에게 궁금한 내용을 자세히 적어주세요."
-                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"></textarea>
+        <section class="lg:col-span-5 flex flex-col bg-white border border-gray-200 rounded-xl shadow-xs overflow-hidden h-[500px] lg:h-[calc(100vh-180px)] sticky top-20">
+            <div class="bg-gray-50 border-b border-gray-200 px-4 py-3 flex justify-between items-center">
+                <h2 class="text-sm font-bold text-gray-700 flex items-center gap-1.5">
+                    📊 실시간 발표자료 
+                    <span class="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-green-100 text-green-700 animate-pulse">LIVE</span>
+                </h2>
+                <span class="text-xs text-gray-400" id="pdfStatus">연결 대기 중</span>
+            </div>
+            <div class="flex-1 bg-gray-100 flex items-center justify-center p-2 relative" id="pdfContainer">
+                <div id="pdfPlaceholder" class="text-center p-4">
+                    <p class="text-gray-400 text-sm">상단에 PDF URL을 입력하고 동기화 버튼을 누르면</p>
+                    <p class="text-gray-400 text-xs mt-1">이 영역에 발표 자료가 실시간으로 로드됩니다.</p>
                 </div>
-                <button type="submit" 
-                    class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5 px-4 rounded-lg transition duration-200 cursor-pointer">
-                    질문 등록하기
-                </button>
-            </form>
-        </section>
-
-        <section>
-            <h2 class="text-lg font-semibold mb-4 text-gray-700 flex items-center gap-2">
-                💬 질문 목록 <span id="questionCount" class="text-sm bg-blue-100 text-blue-600 px-2 py-0.5 rounded-full font-normal">0</span>
-            </h2>
-            <div id="questionList" class="space-y-4">
-                <p class="text-center text-gray-400 py-8">질문을 불러오는 중입니다...</p>
+                <iframe id="pdfViewer" class="w-full h-full rounded border-0 hidden" allow="autoplay"></iframe>
             </div>
         </section>
 
+        <div class="lg:col-span-7 flex flex-col gap-6">
+            
+            <section class="bg-white p-5 rounded-xl shadow-xs border border-gray-200">
+                <h2 class="text-sm font-bold mb-3 text-gray-700 flex items-center gap-1">🙋‍♂️ 새로운 질문 남기기</h2>
+                <form id="questionForm" class="space-y-3">
+                    <div>
+                        <textarea id="content" required rows="3" maxlength="300" placeholder="멘토에게 궁금한 내용을 적어주세요. (최대 300자)"
+                            class="w-full text-sm px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none resize-none"></textarea>
+                        <div class="text-right text-[11px] text-gray-400 mt-1" id="charCounter">0 / 300자</div>
+                    </div>
+                    <button type="submit" 
+                        class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium text-sm py-2 px-4 rounded-lg transition duration-200 cursor-pointer shadow-xs">
+                        질문 등록하기
+                    </button>
+                </form>
+            </section>
+
+            <section class="flex flex-col flex-1">
+                <h2 class="text-sm font-bold mb-3 text-gray-700 flex items-center gap-2">
+                    💬 실시간 질문 목록 
+                    <span id="questionCount" class="text-xs bg-blue-100 text-blue-600 px-2 py-0.5 rounded-full font-semibold">0</span>
+                </h2>
+                <div id="questionList" class="space-y-3 overflow-y-auto max-h-[600px] pr-1">
+                    <p class="text-center text-sm text-gray-400 py-8">질문을 불러오는 중입니다...</p>
+                </div>
+            </section>
+        </div>
+
     </main>
 
-    <footer class="bg-gray-100 border-t border-gray-200 py-4 text-center text-xs text-gray-400">
+    <footer class="bg-gray-100 border-t border-gray-200 py-3 text-center text-[11px] text-gray-400">
         © 2026 Mentoring Q&A Space. Powered by Supabase & Vanilla JS.
     </footer>
 
@@ -61,6 +97,21 @@
         const questionForm = document.getElementById('questionForm');
         const questionList = document.getElementById('questionList');
         const questionCount = document.getElementById('questionCount');
+        const textareaContent = document.getElementById('content');
+        const charCounter = document.getElementById('charCounter');
+        
+        // PDF 연동용 DOM
+        const pdfUrlInput = document.getElementById('pdfUrlInput');
+        const updatePdfBtn = document.getElementById('updatePdfBtn');
+        const pdfViewer = document.getElementById('pdfViewer');
+        const pdfPlaceholder = document.getElementById('pdfPlaceholder');
+        const pdfStatus = document.getElementById('pdfStatus');
+
+        // 실시간 글자 수 세기 기능
+        textareaContent.addEventListener('input', () => {
+            const length = textareaContent.value.length;
+            charCounter.textContent = `${length} / 300자`;
+        });
 
         // 2. 데이터 베이스에서 질문 가져와서 화면에 그리기 (Read)
         async function fetchQuestions() {
@@ -74,7 +125,7 @@
                 renderQuestions(data);
             } catch (error) {
                 console.error('데이터 로드 실패:', error.message);
-                questionList.innerHTML = `<p class="text-center text-red-500 py-8">데이터를 불러오는 중 오류가 발생했습니다.</p>`;
+                questionList.innerHTML = `<p class="text-center text-sm text-red-500 py-8">데이터를 불러오는 중 오류가 발생했습니다.</p>`;
             }
         }
 
@@ -83,41 +134,43 @@
             questionCount.textContent = questions.length;
 
             if (questions.length === 0) {
-                questionList.innerHTML = `<p class="text-center text-gray-400 py-8">등록된 질문이 없습니다. 첫 번째 질문을 남겨보세요!</p>`;
+                questionList.innerHTML = `<p class="text-center text-sm text-gray-400 py-8">등록된 질문이 없습니다. 첫 번째 질문을 남겨보세요!</p>`;
                 return;
             }
 
             questionList.innerHTML = questions.map(q => {
-                const date = new Date(q.created_at).toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' });
+                const date = new Date(q.created_at).toLocaleString('ko-KR', { 
+                    timeZone: 'Asia/Seoul',
+                    month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
+                });
                 
                 const answerHTML = q.answer 
-                    ? `<div class="mt-4 p-4 bg-blue-50 border-l-4 border-blue-500 rounded-r-lg">
-                        <div class="flex items-center gap-1.5 mb-1">
-                            <span class="text-xs bg-blue-600 text-white px-1.5 py-0.5 rounded font-semibold">멘토 답변</span>
+                    ? `<div class="mt-2.5 p-3 bg-blue-50/60 border-l-2 border-blue-500 rounded-r-lg">
+                        <div class="flex items-center gap-1 mb-1">
+                            <span class="text-[10px] bg-blue-600 text-white px-1.5 py-0.2 rounded font-medium">멘토 답변</span>
                         </div>
-                        <p class="text-gray-700 text-sm whitespace-pre-wrap">${q.answer}</p>
+                        <p class="text-gray-700 text-xs md:text-sm whitespace-pre-wrap leading-relaxed">${q.answer}</p>
                        </div>`
-                    : `<div class="mt-4 p-3 bg-gray-50 rounded-lg border border-dashed border-gray-200 text-center">
-                        <p class="text-xs text-gray-400">💡 멘토의 답변을 기다리고 있는 질문입니다.</p>
+                    : `<div class="mt-2.5 p-2 bg-gray-50/80 rounded border border-dashed border-gray-200 text-center">
+                        <p class="text-[11px] text-gray-400">💡 멘토의 답변을 기다리고 있는 질문입니다.</p>
                        </div>`;
 
                 return `
-                    <div class="bg-white p-5 rounded-xl shadow-xs border border-gray-200 hover:border-blue-300 transition duration-150">
-                        <div class="flex justify-between items-start gap-4 mb-3">
-                            <span class="text-xs text-gray-400 font-mono">${date}</span>
+                    <div class="bg-white p-4 rounded-xl shadow-[0_1px_2px_rgba(0,0,0,0.05)] border border-gray-200 hover:border-blue-200 transition duration-150">
+                        <div class="flex justify-between items-start gap-4 mb-1.5">
+                            <span class="text-[11px] text-gray-400 font-medium">${date}</span>
                         </div>
-                        <p class="text-gray-800 text-base font-medium whitespace-pre-wrap">${escapeHtml(q.content)}</p>
+                        <p class="text-gray-800 text-sm md:text-base font-normal whitespace-pre-wrap leading-relaxed">${escapeHtml(q.content)}</p>
                         ${answerHTML}
                     </div>
                 `;
             }).join('');
         }
 
-        // 4. 새 질문 등록하기 (Insert - 오직 content 컬럼만 전송)
+        // 4. 새 질문 등록하기 (Insert)
         questionForm.addEventListener('submit', async (e) => {
             e.preventDefault();
-
-            const content = document.getElementById('content').value.trim();
+            const content = textareaContent.value.trim();
 
             try {
                 const { error } = await supabaseClient
@@ -126,6 +179,7 @@
 
                 if (error) throw error;
                 questionForm.reset();
+                charCounter.textContent = '0 / 300자';
             } catch (error) {
                 alert('질문 등록에 실패했습니다: ' + error.message);
                 console.error(error);
@@ -143,7 +197,28 @@
                 .replace(/'/g, "&#039;");
         }
 
-        // 5. Supabase 실시간 감지 구독 설정 (Realtime)
+        // 5. PDF 실시간 업데이트 로직 (Local Storage 및 간단 세션 연동)
+        // 실제 운영 시 해당 주소를 고정하거나, 브라우저가 리로드되어도 띄워지도록 처리합니다.
+        function loadPdf(url) {
+            if(!url) return;
+            pdfPlaceholder.classList.add('hidden');
+            pdfViewer.classList.remove('hidden');
+            pdfViewer.src = url;
+            pdfStatus.textContent = "연결됨";
+            pdfStatus.className = "text-xs text-blue-600 font-medium";
+        }
+
+        updatePdfBtn.addEventListener('click', () => {
+            const url = pdfUrlInput.value.trim();
+            if(url) {
+                localStorage.setItem('current_presentation_pdf', url);
+                loadPdf(url);
+            } else {
+                alert('유효한 URL 링크를 입력해 주세요.');
+            }
+        });
+
+        // 6. Supabase 실시간 감지 구독 설정 (Realtime)
         function subscribeRealtime() {
             supabaseClient
                 .channel('schema-db-changes')
@@ -158,9 +233,15 @@
                 .subscribe();
         }
 
-        // 초기 구동
+        // 초기 구동 및 임시 저장된 PDF 불러오기
         fetchQuestions();
         subscribeRealtime();
+
+        const savedPdf = localStorage.getItem('current_presentation_pdf');
+        if (savedPdf) {
+            pdfUrlInput.value = savedPdf;
+            loadPdf(savedPdf);
+        }
     </script>
 </body>
 </html>
