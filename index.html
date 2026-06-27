@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>멘토링 Q&A 방명록</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body class="bg-gray-50 text-gray-800 min-h-screen flex flex-col justify-between">
+
+    <header class="bg-white shadow-sm border-b border-gray-200">
+        <div class="max-w-4xl mx-auto px-4 py-6">
+            <h1 class="text-2xl font-bold text-blue-600 flex items-center gap-2">
+                🚀 멘토링 질의응답방
+            </h1>
+            <p class="text-sm text-gray-500 mt-1">멘토에게 궁금한 점을 자유롭게 질문해 보세요! (실시간으로 업데이트됩니다)</p>
+        </div>
+    </header>
+
+    <main class="max-w-4xl mx-auto px-4 py-8 flex-1 w-full">
+        
+        <section class="bg-white p-6 rounded-xl shadow-xs border border-gray-200 mb-8">
+            <h2 class="text-lg font-semibold mb-4 text-gray-700">🙋‍♂️ 새로운 질문 남기기</h2>
+            <form id="questionForm" class="space-y-4">
+                <div>
+                    <label for="title" class="block text-sm font-medium text-gray-600 mb-1">질문 제목</label>
+                    <input type="text" id="title" required placeholder="예: 비전공자 개발자 취업 준비 방향성 질문입니다."
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                </div>
+                <div>
+                    <label for="content" class="block text-sm font-medium text-gray-600 mb-1">질문 내용</label>
+                    <textarea id="content" required rows="4" placeholder="궁금한 내용을 자세히 적어주세요."
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"></textarea>
+                </div>
+                <button type="submit" 
+                    class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5 px-4 rounded-lg transition duration-200 cursor-pointer">
+                    질문 등록하기
+                </button>
+            </form>
+        </section>
+
+        <section>
+            <h2 class="text-lg font-semibold mb-4 text-gray-700 flex items-center gap-2">
+                💬 질문 목록 <span id="questionCount" class="text-sm bg-blue-100 text-blue-600 px-2 py-0.5 rounded-full font-normal">0</span>
+            </h2>
+            <div id="questionList" class="space-y-4">
+                <p class="text-center text-gray-400 py-8">질문을 불러오는 중입니다...</p>
+            </div>
+        </section>
+
+    </main>
+
+    <footer class="bg-gray-100 border-t border-gray-200 py-4 text-center text-xs text-gray-400">
+        © 2026 Mentoring Q&A Space. Powered by Supabase & Vanilla JS.
+    </footer>
+
+    <script>
+        // 1. 제공해주신 새 Supabase API 정보 설정
+        const SUPABASE_URL = 'https://oknuuepfxtaavxnareat.supabase.co';
+        const SUPABASE_KEY = 'sb_publishable_IpkgAw7waQDuoU_yhl6Lvg_HAtOTvdP';
+        
+        // Supabase 클라이언트 초기화
+        const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        // DOM 요소 가져오기
+        const questionForm = document.getElementById('questionForm');
+        const questionList = document.getElementById('questionList');
+        const questionCount = document.getElementById('questionCount');
+
+        // 2. 데이터 베이스에서 질문 가져와서 화면에 그리기 (Read)
+        async function fetchQuestions() {
+            try {
+                const { data, error } = await supabase
+                    .from('questions')
+                    .select('*')
+                    .order('created_at', { ascending: false }); // 최신글이 위로 오게
+
+                if (error) throw error;
+
+                // 데이터 렌더링
+                renderQuestions(data);
+            } catch (error) {
+                console.error('데이터 로드 실패:', error.message);
+                questionList.innerHTML = `<p class="text-center text-red-500 py-8">데이터를 불러오는 중 오류가 발생했습니다: ${error.message}</p>`;
+            }
+        }
+
+        // 3. 질문 데이터를 HTML 카드 형태로 변환해 화면에 주입
+        function renderQuestions(questions) {
+            questionCount.textContent = questions.length;
+
+            if (questions.length === 0) {
+                questionList.innerHTML = `<p class="text-center text-gray-400 py-8">등록된 질문이 없습니다. 첫 번째 질문을 남겨보세요!</p>`;
+                return;
+            }
+
+            questionList.innerHTML = questions.map(q => {
+                const date = new Date(q.created_at).toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' });
+                
+                // 답변이 있을 때와 없을 때의 UI 분기 처리
+                const answerHTML = q.answer 
+                    ? `<div class="mt-4 p-4 bg-blue-50 border-l-4 border-blue-500 rounded-r-lg">
+                        <div class="flex items-center gap-1.5 mb-1">
+                            <span class="text-xs bg-blue-600 text-white px-1.5 py-0.5 rounded font-semibold">멘토 답변</span>
+                        </div>
+                        <p class="text-gray-700 text-sm whitespace-pre-wrap">${q.answer}</p>
+                       </div>`
+                    : `<div class="mt-4 p-3 bg-gray-50 rounded-lg border border-dashed border-gray-200 text-center">
+                        <p class="text-xs text-gray-400">💡 멘토의 답변을 기다리고 있는 질문입니다.</p>
+                       </div>`;
+
+                return `
+                    <div class="bg-white p-5 rounded-xl shadow-xs border border-gray-200 hover:border-blue-300 transition duration-150">
+                        <div class="flex justify-between items-start gap-4 mb-2">
+                            <h3 class="text-md font-bold text-gray-900">${escapeHtml(q.title)}</h3>
+                            <span class="text-xs text-gray-400 shrink-0">${date}</span>
+                        </div>
+                        <p class="text-gray-600 text-sm whitespace-pre-wrap">${escapeHtml(q.content)}</p>
+                        ${answerHTML}
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // 4. 새 질문 등록하기 (Insert)
+        questionForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const title = document.getElementById('title').value.trim();
+            const content = document.getElementById('content').value.trim();
+
+            try {
+                const { error } = await supabase
+                    .from('questions')
+                    .insert([{ title, content }]);
+
+                if (error) throw error;
+
+                // 폼 초기화
+                questionForm.reset();
+            } catch (error) {
+                alert('질문 등록에 실패했습니다: ' + error.message);
+                console.error(error);
+            }
+        });
+
+        // XSS 방지를 위한 텍스트 이스케이프 함수
+        function escapeHtml(text) {
+            if (!text) return '';
+            return text
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
+        // 5. Supabase 실시간 감지 구독 설정 (Realtime)
+        function subscribeRealtime() {
+            supabase
+                .channel('schema-db-changes')
+                .on(
+                    'postgres_changes',
+                    { event: '*', schema: 'public', table: 'questions' },
+                    (payload) => {
+                        console.log('DB 변경 감지됨:', payload);
+                        // 데이터에 변화(등록, 수정, 삭제)가 생기면 목록을 즉시 갱신
+                        fetchQuestions();
+                    }
+                )
+                .subscribe();
+        }
+
+        // 페이지 최초 로드 시 실행
+        fetchQuestions();
+        subscribeRealtime();
+    </script>
+</body>
+</html>
