@@ -24,13 +24,8 @@
             <h2 class="text-lg font-semibold mb-4 text-gray-700">🙋‍♂️ 새로운 질문 남기기</h2>
             <form id="questionForm" class="space-y-4">
                 <div>
-                    <label for="title" class="block text-sm font-medium text-gray-600 mb-1">질문 제목</label>
-                    <input type="text" id="title" required placeholder="예: 비전공자 개발자 취업 준비 방향성 질문입니다."
-                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none">
-                </div>
-                <div>
                     <label for="content" class="block text-sm font-medium text-gray-600 mb-1">질문 내용</label>
-                    <textarea id="content" required rows="4" placeholder="궁금한 내용을 자세히 적어주세요."
+                    <textarea id="content" required rows="4" placeholder="멘토에게 궁금한 내용을 자세히 적어주세요."
                         class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"></textarea>
                 </div>
                 <button type="submit" 
@@ -60,7 +55,6 @@
         const SUPABASE_URL = 'https://oknuuepfxtaavxnareat.supabase.co';
         const SUPABASE_KEY = 'sb_publishable_IpkgAw7waQDuoU_yhl6Lvg_HAtOTvdP';
         
-        // ⚠️ 중복 선언 에러 해결을 위해 변수명을 'supabaseClient'로 명확하게 설정했습니다.
         const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
         // DOM 요소 가져오기
@@ -84,7 +78,7 @@
             }
         }
 
-        // 3. 질문 데이터를 HTML 카드 형태로 변환해 화면에 주입
+        // 3. 질문 데이터를 HTML 카드 형태로 변환해 화면에 주입 (제목 영역 제거 완료)
         function renderQuestions(questions) {
             questionCount.textContent = questions.length;
 
@@ -109,66 +103,4 @@
 
                 return `
                     <div class="bg-white p-5 rounded-xl shadow-xs border border-gray-200 hover:border-blue-300 transition duration-150">
-                        <div class="flex justify-between items-start gap-4 mb-2">
-                            <h3 class="text-md font-bold text-gray-900">${escapeHtml(q.title)}</h3>
-                            <span class="text-xs text-gray-400 shrink-0">${date}</span>
-                        </div>
-                        <p class="text-gray-600 text-sm whitespace-pre-wrap">${escapeHtml(q.content)}</p>
-                        ${answerHTML}
-                    </div>
-                `;
-            }).join('');
-        }
-
-        // 4. 새 질문 등록하기 (Insert)
-        questionForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-
-            const title = document.getElementById('title').value.trim();
-            const content = document.getElementById('content').value.trim();
-
-            try {
-                const { error } = await supabaseClient
-                    .from('questions')
-                    .insert([{ title, content }]);
-
-                if (error) throw error;
-                questionForm.reset();
-            } catch (error) {
-                alert('질문 등록에 실패했습니다: ' + error.message);
-                console.error(error);
-            }
-        });
-
-        // XSS 방지를 위한 텍스트 이스케이프 함수
-        function escapeHtml(text) {
-            if (!text) return '';
-            return text
-                .replace(/&/g, "&amp;")
-                .replace(/</g, "&lt;")
-                .replace(/>/g, "&gt;")
-                .replace(/"/g, "&quot;")
-                .replace(/'/g, "&#039;");
-        }
-
-        // 5. Supabase 실시간 감지 구독 설정 (Realtime)
-        function subscribeRealtime() {
-            supabaseClient
-                .channel('schema-db-changes')
-                .on(
-                    'postgres_changes',
-                    { event: '*', schema: 'public', table: 'questions' },
-                    (payload) => {
-                        console.log('DB 변경 감지됨:', payload);
-                        fetchQuestions();
-                    }
-                )
-                .subscribe();
-        }
-
-        // 초기 구동
-        fetchQuestions();
-        subscribeRealtime();
-    </script>
-</body>
-</html>
+                        <div class="flex justify-between items-start gap-4 mb-3
