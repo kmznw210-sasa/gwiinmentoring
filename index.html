@@ -6,7 +6,7 @@
     <title>멘토링 스페이스</title>
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" />
+    <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" />
     <style>
         body { font-family: "Pretendard Variable", Pretendard, sans-serif; }
     </style>
@@ -250,11 +250,19 @@
         fetchQuestions();
         subscribeRealtime();
 
-        // 저장되었던 PDF 복원
+        // 🛠️ [사전 로드 기능 적용 완료] 
+        // 1. 같은 폴더에 넣어둔 presentation.pdf를 기본 경로로 설정합니다.
+        const DEFAULT_PDF = './presentation.pdf'; 
+
+        // 2. 브라우저 저장 세션(localStorage) 확인 후 우선 로드
         const savedPdf = localStorage.getItem('current_presentation_pdf');
         if (savedPdf) {
             pdfUrlInput.value = savedPdf;
             loadPdf(savedPdf);
+        } else {
+            // 저장된 임시 세션이 없다면 사전에 폴더에 같이 올린 기본 PDF를 바로 로드합니다.
+            pdfUrlInput.value = DEFAULT_PDF;
+            loadPdf(DEFAULT_PDF);
         }
     </script>
 </body>
