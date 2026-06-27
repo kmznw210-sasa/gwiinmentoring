@@ -78,7 +78,7 @@
             }
         }
 
-        // 3. 질문 데이터를 HTML 카드 형태로 변환해 화면에 주입 (제목 영역 제거 완료)
+        // 3. 질문 데이터를 HTML 카드 형태로 변환해 화면에 주입
         function renderQuestions(questions) {
             questionCount.textContent = questions.length;
 
@@ -120,7 +120,6 @@
             const content = document.getElementById('content').value.trim();
 
             try {
-                // title 제거하고 content만 테이블에 넣도록 수정했습니다.
                 const { error } = await supabaseClient
                     .from('questions')
                     .insert([{ content }]);
