@@ -56,12 +56,12 @@
     </footer>
 
     <script>
-        // 1. 제공해주신 새 Supabase API 정보 설정
+        // 1. Supabase API 정보 설정
         const SUPABASE_URL = 'https://oknuuepfxtaavxnareat.supabase.co';
         const SUPABASE_KEY = 'sb_publishable_IpkgAw7waQDuoU_yhl6Lvg_HAtOTvdP';
         
-        // Supabase 클라이언트 초기화
-        const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+        // ⚠️ 중복 선언 에러 해결을 위해 변수명을 'supabaseClient'로 명확하게 설정했습니다.
+        const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
         // DOM 요소 가져오기
         const questionForm = document.getElementById('questionForm');
@@ -71,18 +71,16 @@
         // 2. 데이터 베이스에서 질문 가져와서 화면에 그리기 (Read)
         async function fetchQuestions() {
             try {
-                const { data, error } = await supabase
+                const { data, error } = await supabaseClient
                     .from('questions')
                     .select('*')
-                    .order('created_at', { ascending: false }); // 최신글이 위로 오게
+                    .order('created_at', { ascending: false }); // 최신글 상단 배치
 
                 if (error) throw error;
-
-                // 데이터 렌더링
                 renderQuestions(data);
             } catch (error) {
                 console.error('데이터 로드 실패:', error.message);
-                questionList.innerHTML = `<p class="text-center text-red-500 py-8">데이터를 불러오는 중 오류가 발생했습니다: ${error.message}</p>`;
+                questionList.innerHTML = `<p class="text-center text-red-500 py-8">데이터를 불러오는 중 오류가 발생했습니다.</p>`;
             }
         }
 
@@ -98,7 +96,6 @@
             questionList.innerHTML = questions.map(q => {
                 const date = new Date(q.created_at).toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' });
                 
-                // 답변이 있을 때와 없을 때의 UI 분기 처리
                 const answerHTML = q.answer 
                     ? `<div class="mt-4 p-4 bg-blue-50 border-l-4 border-blue-500 rounded-r-lg">
                         <div class="flex items-center gap-1.5 mb-1">
@@ -131,13 +128,11 @@
             const content = document.getElementById('content').value.trim();
 
             try {
-                const { error } = await supabase
+                const { error } = await supabaseClient
                     .from('questions')
                     .insert([{ title, content }]);
 
                 if (error) throw error;
-
-                // 폼 초기화
                 questionForm.reset();
             } catch (error) {
                 alert('질문 등록에 실패했습니다: ' + error.message);
@@ -158,21 +153,20 @@
 
         // 5. Supabase 실시간 감지 구독 설정 (Realtime)
         function subscribeRealtime() {
-            supabase
+            supabaseClient
                 .channel('schema-db-changes')
                 .on(
                     'postgres_changes',
                     { event: '*', schema: 'public', table: 'questions' },
                     (payload) => {
                         console.log('DB 변경 감지됨:', payload);
-                        // 데이터에 변화(등록, 수정, 삭제)가 생기면 목록을 즉시 갱신
                         fetchQuestions();
                     }
                 )
                 .subscribe();
         }
 
-        // 페이지 최초 로드 시 실행
+        // 초기 구동
         fetchQuestions();
         subscribeRealtime();
     </script>
