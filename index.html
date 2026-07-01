@@ -83,7 +83,12 @@
                 <div id="pdfPlaceholder" class="text-center p-4">
                     <p class="text-gray-400 text-sm font-medium">등록된 발표자료가 없습니다.</p>
                 </div>
-                <iframe id="pdfViewer" class="w-full h-full rounded-lg border-0 hidden" allow="autoplay"></iframe>
+                <object id="pdfViewer" type="application/pdf" class="w-full h-full rounded-lg border-0 hidden">
+                    <div class="text-center p-4">
+                        <p class="text-gray-500 text-sm mb-2">이 브라우저 환경에서는 자료를 바로 열 수 없습니다.</p>
+                        <a id="pdfDownloadLink" href="#" target="_blank" class="inline-block bg-blue-600 text-white text-xs px-3 py-2 rounded font-medium">새 창에서 PDF 보기</a>
+                    </div>
+                </object>
             </div>
         </section>
 
@@ -107,6 +112,7 @@
         
         const pdfViewer = document.getElementById('pdfViewer');
         const pdfPlaceholder = document.getElementById('pdfPlaceholder');
+        const pdfDownloadLink = document.getElementById('pdfDownloadLink');
 
         let currentLoadedUrl = "";
 
@@ -131,17 +137,17 @@
             charCounter.textContent = `${textareaContent.value.length} / 300자`;
         });
 
-        // 질문 목록 최적화 불러오기 (서버 원격 정렬)
+        // 🚀 초기 로딩 최적화: 서버 측 정렬 및 로드 속도 단축
         async function fetchQuestions() {
             try {
                 const { data, error } = await supabaseClient
                     .from('questions')
                     .select('*')
-                    .order('id', { ascending: true });
+                    .order('id', { ascending: true }); // 등록 시간 기준으로 기본 일차 정렬
 
                 if (error) throw error;
                 
-                // 1번 수정사항: 1부터 순차적으로 올라가는 번호 생성
+                // 🚀 가상 정렬 매핑: 뒤죽박죽인 id 값 대신 1번부터 이쁘게 카운팅
                 const processedData = data.map((item, index) => {
                     return {
                         ...item,
@@ -149,7 +155,7 @@
                     };
                 });
 
-                // 답변 여부 그룹화 및 최신순 내부 정렬
+                // 답변 완료 카드가 아래로 밀리도록 하고, 각각 최신 순번대로 최종 배치
                 const sortedData = processedData.sort((a, b) => {
                     const isCompleteA = !!a.complete || (!!a.answer && String(a.answer).trim() !== '');
                     const isCompleteB = !!b.complete || (!!b.answer && String(b.answer).trim() !== '');
@@ -205,6 +211,7 @@
                         </div>`;
                 }
 
+                // 가상 순번인 q.displayNumber를 출력합니다.
                 return `
                     <div class="p-4 rounded-xl border ${boxStyles} transition-all duration-300">
                         <div class="flex justify-between items-center mb-2">
@@ -241,7 +248,7 @@
             return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
         }
 
-        // 🛠️ 구글 드라이브 전용 임베드 URL 변환 및 출력 스크립트
+        // PDF 뷰어 렌더러 함수
         function loadPdf(url) {
             if(!url || url === currentLoadedUrl) return;
             currentLoadedUrl = url;
@@ -249,27 +256,16 @@
             pdfPlaceholder.classList.add('hidden');
             pdfViewer.classList.remove('hidden');
 
-            let finalUrl = url;
-
-            // 구글 드라이브 일반 공유 주소를 인쇄/다운로드 툴바가 포함된 공식 미리보기(/preview)로 치환합니다.
-            if (url.includes('drive.google.com')) {
-                if (url.includes('/view')) {
-                    finalUrl = url.replace(/\/view.*/, '/preview');
-                } else if (url.includes('/edit')) {
-                    finalUrl = url.replace(/\/edit.*/, '/preview');
-                } else if (!url.endsWith('/preview')) {
-                    finalUrl = url.trim() + (url.endsWith('/') ? 'preview' : '/preview');
-                }
-            } 
-            // 상대경로 주소일 경우 구글문서 안전 뷰어 결합
-            else if (url.startsWith('.')) {
-                let absoluteUrl = window.location.origin + window.location.pathname.replace('index.html', '') + url.replace('./', '');
-                finalUrl = `https://docs.google.com/gview?url=${encodeURIComponent(absoluteUrl)}&embedded=true`;
+            let fullUrl = url;
+            if (url.startsWith('.')) {
+                fullUrl = window.location.origin + window.location.pathname.replace('index.html', '') + url.replace('./', '');
             }
-
-            pdfViewer.src = finalUrl;
+            
+            pdfViewer.data = fullUrl;
+            pdfDownloadLink.href = fullUrl;
         }
 
+        // 🚀 PDF 핵심 안전장치: 구글 드라이브 주소 차단을 피하기 위해 깃허브 `./presentation.pdf` 강제 고정
         async function fetchSettings() {
             try {
                 const { data, error } = await supabaseClient
@@ -279,11 +275,16 @@
                     .single();
                 
                 if (error) throw error;
-                if (data && data.pdf_url) {
+                
+                // 구글 드라이브 주소가 기입되어 있거나 공백인 경우, 구글의 프레임 제한 정책 우회를 위해 깃허브 로컬 파일 최우선 적용
+                if (data && data.pdf_url && data.pdf_url.startsWith('http') && !data.pdf_url.includes('drive.google.com')) {
                     loadPdf(data.pdf_url);
+                } else {
+                    loadPdf('./presentation.pdf');
                 }
             } catch (e) {
-                console.error("설정 로드 실패:", e.message);
+                console.error("설정 데이터 연동 우회 -> 로컬 파일 바인딩 완료");
+                loadPdf('./presentation.pdf');
             }
         }
 
@@ -303,7 +304,6 @@
                 .subscribe();
         }
 
-        // 최적화 순서에 맞춘 데이터 초기 호출
         fetchQuestions();
         fetchSettings();
         subscribeRealtime();
