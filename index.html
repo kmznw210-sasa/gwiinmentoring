@@ -35,8 +35,7 @@
                 <span>발표자료 페이지</span>
             </button>
         </nav>
-        
-        </aside>
+    </aside>
 
     <main class="flex-1 flex flex-col bg-gray-50 overflow-hidden">
         
@@ -138,33 +137,21 @@
 
                 if (error) throw error;
                 
-                // 복합 정렬 규칙 적용 로직
+                // 정렬 규칙: complete=false 위쪽 배치, 같을 경우 id가 큰(최신) 질문이 위쪽 배치
                 const sortedData = data.sort((a, b) => {
-                    const isCompleteA = a.complete || (a.answer && a.answer.trim() !== '');
-                    const isCompleteB = b.complete || (b.answer && b.answer.trim() !== '');
+                    const isCompleteA = !!a.complete || (!!a.answer && String(a.answer).trim() !== '');
+                    const isCompleteB = !!b.complete || (!!b.answer && String(b.answer).trim() !== '');
 
                     if (isCompleteA !== isCompleteB) {
                         return isCompleteA ? 1 : -1; 
                     }
-                    return b.id - a.id; 
+                    return (b.id || 0) - (a.id || 0); 
                 });
 
                 renderQuestions(sortedData);
             } catch (error) {
                 console.error('로드 실패:', error.message);
-                questionList.innerHTML = `<p class="text-center text-sm text-red-500 py-8">오류가 발생했습니다.</p>`;
-            }
-        }
-
-        async function toggleComplete(id, currentStatus) {
-            try {
-                const { error } = await supabaseClient
-                    .from('questions')
-                    .update({ complete: !currentStatus })
-                    .eq('id', id);
-                if (error) throw error;
-            } catch (error) {
-                alert('상태 업데이트 실패: ' + error.message);
+                questionList.innerHTML = `<p class="text-center text-sm text-red-500 py-8">질문을 불러오지 못했습니다.<br>오류내용: ${error.message}</p>`;
             }
         }
 
@@ -181,7 +168,8 @@
                     timeZone: 'Asia/Seoul', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
                 });
                 
-                const isEffectivelyComplete = q.complete || (q.answer && q.answer.trim() !== '');
+                // 사용자가 complete를 건들지 않아도 answer가 입력되어 있으면 완료로 취급
+                const isEffectivelyComplete = !!q.complete || (!!q.answer && String(q.answer).trim() !== '');
 
                 const boxStyles = isEffectivelyComplete
                     ? 'border-green-200 bg-green-50/20 shadow-[0_1px_3px_rgba(34,197,94,0.05)]'
@@ -206,6 +194,7 @@
                         </div>`;
                 }
 
+                // 🛠️ 웹 화면에서 [완료체크] 체크박스 레이아웃을 완전히 들어냈습니다.
                 return `
                     <div class="p-4 rounded-xl border ${boxStyles} transition-all duration-300">
                         <div class="flex justify-between items-center mb-2">
@@ -215,12 +204,6 @@
                             </div>
                             <div class="flex items-center gap-2">
                                 ${statusBadge}
-                                <label class="inline-flex items-center text-xs text-gray-500 gap-1 cursor-pointer select-none">
-                                    <input type="checkbox" ${isEffectivelyComplete ? 'checked' : ''} 
-                                           onchange="toggleComplete(${q.id}, ${isEffectivelyComplete})" 
-                                           class="w-3.5 h-3.5 accent-green-600 cursor-pointer">
-                                    <span class="text-[11px] hidden md:inline">완료체크</span>
-                                </label>
                             </div>
                         </div>
                         <p class="text-gray-800 text-sm md:text-base font-normal whitespace-pre-wrap leading-relaxed">${escapeHtml(q.content)}</p>
@@ -272,10 +255,8 @@
         fetchQuestions();
         subscribeRealtime();
 
-        // 고정 로드 주소 적용 (사이드바 제어는 사라졌지만 기능은 유지됨)
         const DEFAULT_PDF = './presentation.pdf'; 
         loadPdf(DEFAULT_PDF);
     </script>
 </body>
 </html>
-//ㅇ
