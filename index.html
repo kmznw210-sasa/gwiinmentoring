@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>멘토링 스페이스</title>
+    <title>라이브 스페이스</title>
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" />
@@ -17,7 +17,7 @@
         <div class="p-5 border-b border-gray-100 flex items-center justify-between">
             <div>
                 <h1 class="text-lg font-bold text-gray-900 flex items-center gap-1.5">
-                    <span class="text-blue-600">🚀</span> 멘토링 룸
+                    <span class="text-blue-600">🚀</span> 라이브 룸
                 </h1>
                 <p class="text-[11px] text-gray-400 mt-0.5">실시간 동기화 스페이스</p>
             </div>
@@ -25,50 +25,22 @@
         </div>
 
         <nav class="p-3 space-y-1 flex-1">
-            <button id="menuPresentation" class="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg bg-blue-50 text-blue-600 transition cursor-pointer group">
-                <span class="text-lg group-hover:scale-110 transition duration-150">📊</span>
-                <span>발표자료 페이지</span>
-            </button>
-            <button id="menuQna" class="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg text-gray-600 hover:bg-gray-50 transition cursor-pointer group">
+            <button id="menuQna" class="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg bg-blue-50 text-blue-600 transition cursor-pointer group">
                 <span class="text-lg group-hover:scale-110 transition duration-150">💬</span>
                 <span class="flex-1 text-left">질의응답 페이지</span>
                 <span id="sidebarCount" class="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full font-semibold">0</span>
             </button>
+            <button id="menuPresentation" class="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg text-gray-600 hover:bg-gray-50 transition cursor-pointer group">
+                <span class="text-lg group-hover:scale-110 transition duration-150">📊</span>
+                <span>발표자료 페이지</span>
+            </button>
         </nav>
-
-        <div class="p-4 bg-gray-50 border-t border-gray-100 hidden md:block">
-            <label class="block text-[11px] font-semibold text-gray-400 mb-1">📄 관리자 PDF 동기화 URL</label>
-            <div class="flex gap-1.5">
-                <input type="text" id="pdfUrlInput" placeholder="PDF 링크 입력" 
-                       class="bg-white border border-gray-300 text-xs rounded px-2 py-1.5 w-full focus:outline-blue-500 text-gray-600">
-                <button id="updatePdfBtn" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium px-2 py-1.5 rounded shrink-0 cursor-pointer transition">
-                    적용
-                </button>
-            </div>
-        </div>
-    </aside>
+        
+        </aside>
 
     <main class="flex-1 flex flex-col bg-gray-50 overflow-hidden">
         
-        <section id="pagePresentation" class="flex-1 flex flex-col p-4 md:p-6">
-            <div class="mb-4 flex justify-between items-center">
-                <div>
-                    <h2 class="text-xl font-bold text-gray-900">📊 발표자료 스크린</h2>
-                    <p class="text-xs text-gray-500 mt-1">멘토가 공유한 발표자료를 확인하는 페이지입니다.</p>
-                </div>
-                <span class="hidden md:inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700 animate-pulse">LIVE 동기화 중</span>
-            </div>
-            
-            <div class="flex-1 bg-white border border-gray-200 rounded-xl shadow-xs overflow-hidden flex items-center justify-center p-3 relative min-h-[450px]">
-                <div id="pdfPlaceholder" class="text-center p-4">
-                    <p class="text-gray-400 text-sm font-medium">등록된 발표자료가 없습니다.</p>
-                    <p class="text-gray-400 text-xs mt-1">사이드바 하단에 PDF 주소를 입력하고 적용을 눌러보세요.</p>
-                </div>
-                <iframe id="pdfViewer" class="w-full h-full rounded-lg border-0 hidden" allow="autoplay"></iframe>
-            </div>
-        </section>
-
-        <section id="pageQna" class="flex-1 flex flex-col p-4 md:p-6 hidden overflow-y-auto">
+        <section id="pageQna" class="flex-1 flex flex-col p-4 md:p-6 overflow-y-auto">
             <div class="mb-6">
                 <h2 class="text-xl font-bold text-gray-900">💬 실시간 Q&A 방명록</h2>
                 <p class="text-xs text-gray-500 mt-1">강의나 발표 중 궁금한 점을 언제든 남겨주세요.</p>
@@ -79,7 +51,7 @@
                     <h3 class="text-sm font-bold mb-3 text-gray-700 flex items-center gap-1">🙋‍♂️ 새로운 질문 남기기</h3>
                     <form id="questionForm" class="space-y-3">
                         <div>
-                            <textarea id="content" required rows="3" maxlength="300" placeholder="멘토에게 궁금한 내용을 적어주세요. (최대 300자)"
+                            <textarea id="content" required rows="3" maxlength="300" placeholder="물어보고 싶은 내용을 자유롭게 적어주세요!!"
                                 class="w-full text-sm px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none resize-none"></textarea>
                             <div class="text-right text-[11px] text-gray-400 mt-1" id="charCounter">0 / 300자</div>
                         </div>
@@ -91,9 +63,7 @@
                 </div>
 
                 <div class="space-y-3">
-                    <h3 class="text-sm font-bold text-gray-700 flex items-center gap-2">
-                        📋 질문 목록
-                    </h3>
+                    <h3 class="text-sm font-bold text-gray-700 flex items-center gap-2">📋 Q&A</h3>
                     <div id="questionList" class="space-y-3">
                         <p class="text-center text-sm text-gray-400 py-8">질문을 불러오는 중입니다...</p>
                     </div>
@@ -101,33 +71,44 @@
             </div>
         </section>
 
+        <section id="pagePresentation" class="flex-1 flex flex-col p-4 md:p-6 hidden">
+            <div class="mb-4 flex justify-between items-center">
+                <div>
+                    <h2 class="text-xl font-bold text-gray-900">📊 발표자료 스크린</h2>
+                    <p class="text-xs text-gray-500 mt-1">공유된 발표자료를 확인하는 페이지입니다.</p>
+                </div>
+                <span class="hidden md:inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700 animate-pulse">LIVE 동기화 중</span>
+            </div>
+            
+            <div class="flex-1 bg-white border border-gray-200 rounded-xl shadow-xs overflow-hidden flex items-center justify-center p-3 relative min-h-[450px]">
+                <div id="pdfPlaceholder" class="text-center p-4">
+                    <p class="text-gray-400 text-sm font-medium">등록된 발표자료가 없습니다.</p>
+                </div>
+                <iframe id="pdfViewer" class="w-full h-full rounded-lg border-0 hidden" allow="autoplay"></iframe>
+            </div>
+        </section>
+
     </main>
 
     <script>
-        // 1. Supabase API 설정
         const SUPABASE_URL = 'https://oknuuepfxtaavxnareat.supabase.co';
         const SUPABASE_KEY = 'sb_publishable_IpkgAw7waQDuoU_yhl6Lvg_HAtOTvdP';
         const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        // UI 제어 DOM
         const menuPresentation = document.getElementById('menuPresentation');
         const menuQna = document.getElementById('menuQna');
         const pagePresentation = document.getElementById('pagePresentation');
         const pageQna = document.getElementById('pageQna');
 
-        // 기능 관련 DOM
         const questionForm = document.getElementById('questionForm');
         const questionList = document.getElementById('questionList');
         const sidebarCount = document.getElementById('sidebarCount');
         const textareaContent = document.getElementById('content');
         const charCounter = document.getElementById('charCounter');
         
-        const pdfUrlInput = document.getElementById('pdfUrlInput');
-        const updatePdfBtn = document.getElementById('updatePdfBtn');
         const pdfViewer = document.getElementById('pdfViewer');
         const pdfPlaceholder = document.getElementById('pdfPlaceholder');
 
-        // ================= [ 핵심 기능: 페이지 탭 전환 ] =================
         function switchPage(target) {
             if (target === 'presentation') {
                 pagePresentation.classList.remove('hidden');
@@ -145,8 +126,6 @@
         menuPresentation.addEventListener('click', () => switchPage('presentation'));
         menuQna.addEventListener('click', () => switchPage('qna'));
 
-
-        // ================= [ Q&A 게시판 로직 ] =================
         textareaContent.addEventListener('input', () => {
             charCounter.textContent = `${textareaContent.value.length} / 300자`;
         });
@@ -155,18 +134,40 @@
             try {
                 const { data, error } = await supabaseClient
                     .from('questions')
-                    .select('*')
-                    .order('created_at', { ascending: false });
+                    .select('*');
 
                 if (error) throw error;
-                renderQuestions(data);
+                
+                // 복합 정렬 규칙 적용 로직
+                const sortedData = data.sort((a, b) => {
+                    const isCompleteA = a.complete || (a.answer && a.answer.trim() !== '');
+                    const isCompleteB = b.complete || (b.answer && b.answer.trim() !== '');
+
+                    if (isCompleteA !== isCompleteB) {
+                        return isCompleteA ? 1 : -1; 
+                    }
+                    return b.id - a.id; 
+                });
+
+                renderQuestions(sortedData);
             } catch (error) {
                 console.error('로드 실패:', error.message);
                 questionList.innerHTML = `<p class="text-center text-sm text-red-500 py-8">오류가 발생했습니다.</p>`;
             }
         }
 
-        /* [보안 및 이스케이프 반영 렌더링] */
+        async function toggleComplete(id, currentStatus) {
+            try {
+                const { error } = await supabaseClient
+                    .from('questions')
+                    .update({ complete: !currentStatus })
+                    .eq('id', id);
+                if (error) throw error;
+            } catch (error) {
+                alert('상태 업데이트 실패: ' + error.message);
+            }
+        }
+
         function renderQuestions(questions) {
             sidebarCount.textContent = questions.length;
 
@@ -180,18 +181,48 @@
                     timeZone: 'Asia/Seoul', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
                 });
                 
-                const answerHTML = q.answer 
-                    ? `<div class="mt-2.5 p-3 bg-blue-50/60 border-l-2 border-blue-500 rounded-r-lg">
-                        <span class="text-[10px] bg-blue-600 text-white px-1.5 py-0.2 rounded font-medium inline-block mb-1">멘토 답변</span>
-                        <p class="text-gray-700 text-xs md:text-sm whitespace-pre-wrap leading-relaxed">${q.answer}</p>
-                       </div>`
-                    : `<div class="mt-2.5 p-2 bg-gray-50/80 rounded border border-dashed border-gray-200 text-center">
-                        <p class="text-[11px] text-gray-400">💡 답변을 기다리고 있습니다.</p>
-                       </div>`;
+                const isEffectivelyComplete = q.complete || (q.answer && q.answer.trim() !== '');
+
+                const boxStyles = isEffectivelyComplete
+                    ? 'border-green-200 bg-green-50/20 shadow-[0_1px_3px_rgba(34,197,94,0.05)]'
+                    : 'border-gray-200 bg-white shadow-[0_1px_2px_rgba(0,0,0,0.03)]';
+
+                const statusBadge = isEffectivelyComplete
+                    ? `<span class="text-[10px] bg-green-600 text-white px-2 py-0.5 rounded-full font-semibold">✅ 답변 완료</span>`
+                    : `<span class="text-[10px] bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full font-semibold">💡 답변 대기</span>`;
+
+                let answerHTML = '';
+                if (isEffectivelyComplete) {
+                    answerHTML = `
+                        <div class="mt-2.5 p-3 bg-green-50/60 border-l-2 border-green-500 rounded-r-lg">
+                            <p class="text-gray-700 text-xs md:text-sm leading-relaxed font-medium">
+                                ${q.answer ? q.answer : '🙌 현장에서 답변이 완료된 질문입니다.'}
+                            </p>
+                        </div>`;
+                } else {
+                    answerHTML = `
+                        <div class="mt-2.5 p-2 bg-gray-50/80 rounded border border-dashed border-gray-200 text-center">
+                            <p class="text-[11px] text-gray-400">💡 답변을 기다리고 있습니다.</p>
+                        </div>`;
+                }
 
                 return `
-                    <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-[0_1px_2px_rgba(0,0,0,0.03)]">
-                        <div class="mb-1"><span class="text-[11px] text-gray-400">${date}</span></div>
+                    <div class="p-4 rounded-xl border ${boxStyles} transition-all duration-300">
+                        <div class="flex justify-between items-center mb-2">
+                            <div class="flex items-center gap-2">
+                                <span class="text-xs font-bold text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded">#${q.id}</span>
+                                <span class="text-[11px] text-gray-400">${date}</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                ${statusBadge}
+                                <label class="inline-flex items-center text-xs text-gray-500 gap-1 cursor-pointer select-none">
+                                    <input type="checkbox" ${isEffectivelyComplete ? 'checked' : ''} 
+                                           onchange="toggleComplete(${q.id}, ${isEffectivelyComplete})" 
+                                           class="w-3.5 h-3.5 accent-green-600 cursor-pointer">
+                                    <span class="text-[11px] hidden md:inline">완료체크</span>
+                                </label>
+                            </div>
+                        </div>
                         <p class="text-gray-800 text-sm md:text-base font-normal whitespace-pre-wrap leading-relaxed">${escapeHtml(q.content)}</p>
                         ${answerHTML}
                     </div>
@@ -217,31 +248,18 @@
             return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
         }
 
-        // ================= [ PDF 실시간 연동 로직 (모바일 뷰어 우회 추가) ] =================
         function loadPdf(url) {
             if(!url) return;
             pdfPlaceholder.classList.add('hidden');
             pdfViewer.classList.remove('hidden');
 
             let fullUrl = url;
-            // 만약 주소가 './presentation.pdf' 같이 상대경로라면 구글 서버가 인식할 수 있도록 절대 도메인 주소로 가공합니다.
             if (url.startsWith('.')) {
                 fullUrl = window.location.origin + window.location.pathname.replace('index.html', '') + url.replace('./', '');
             }
-
-            // 구글 gview 임베딩 링크를 사용하여 모바일 브라우저의 강제 다운로드 작동을 방지합니다.
             pdfViewer.src = `https://docs.google.com/gview?url=${encodeURIComponent(fullUrl)}&embedded=true`;
         }
 
-        updatePdfBtn.addEventListener('click', () => {
-            const url = pdfUrlInput.value.trim();
-            if(url) {
-                localStorage.setItem('current_presentation_pdf', url);
-                loadPdf(url);
-            }
-        });
-
-        // ================= [ 실시간 DB 구독 ] =================
         function subscribeRealtime() {
             supabaseClient
                 .channel('schema-db-changes')
@@ -251,21 +269,12 @@
                 .subscribe();
         }
 
-        // 초기화 실행
         fetchQuestions();
         subscribeRealtime();
 
-        // [사전 탑재 기본 PDF 정의]
+        // 고정 로드 주소 적용 (사이드바 제어는 사라졌지만 기능은 유지됨)
         const DEFAULT_PDF = './presentation.pdf'; 
-
-        const savedPdf = localStorage.getItem('current_presentation_pdf');
-        if (savedPdf) {
-            pdfUrlInput.value = savedPdf;
-            loadPdf(savedPdf);
-        } else {
-            pdfUrlInput.value = DEFAULT_PDF;
-            loadPdf(DEFAULT_PDF);
-        }
+        loadPdf(DEFAULT_PDF);
     </script>
 </body>
 </html>
