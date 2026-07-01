@@ -108,6 +108,9 @@
         const pdfViewer = document.getElementById('pdfViewer');
         const pdfPlaceholder = document.getElementById('pdfPlaceholder');
 
+        // 현재 뷰어에 로드된 URL 기억용 변수
+        let currentLoadedUrl = "";
+
         function switchPage(target) {
             if (target === 'presentation') {
                 pagePresentation.classList.remove('hidden');
@@ -137,7 +140,6 @@
 
                 if (error) throw error;
                 
-                // 정렬 규칙: complete=false 위쪽 배치, 같을 경우 id가 큰(최신) 질문이 위쪽 배치
                 const sortedData = data.sort((a, b) => {
                     const isCompleteA = !!a.complete || (!!a.answer && String(a.answer).trim() !== '');
                     const isCompleteB = !!b.complete || (!!b.answer && String(b.answer).trim() !== '');
@@ -168,7 +170,6 @@
                     timeZone: 'Asia/Seoul', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
                 });
                 
-                // 사용자가 complete를 건들지 않아도 answer가 입력되어 있으면 완료로 취급
                 const isEffectivelyComplete = !!q.complete || (!!q.answer && String(q.answer).trim() !== '');
 
                 const boxStyles = isEffectivelyComplete
@@ -194,7 +195,6 @@
                         </div>`;
                 }
 
-                // 🛠️ 웹 화면에서 [완료체크] 체크박스 레이아웃을 완전히 들어냈습니다.
                 return `
                     <div class="p-4 rounded-xl border ${boxStyles} transition-all duration-300">
                         <div class="flex justify-between items-center mb-2">
@@ -231,8 +231,11 @@
             return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
         }
 
+        // 🛠️ 발표자료 주소를 받아 iframe을 업데이트하는 함수 (동일 주소 중복 로드 방지)
         function loadPdf(url) {
-            if(!url) return;
+            if(!url || url === currentLoadedUrl) return;
+            currentLoadedUrl = url;
+            
             pdfPlaceholder.classList.add('hidden');
             pdfViewer.classList.remove('hidden');
 
@@ -243,20 +246,46 @@
             pdfViewer.src = `https://docs.google.com/gview?url=${encodeURIComponent(fullUrl)}&embedded=true`;
         }
 
+        // 🛠️ Supabase에서 설정 데이터(PDF URL)를 가져오는 함수
+        async function fetchSettings() {
+            try {
+                const { data, error } = await supabaseClient
+                    .from('settings')
+                    .select('pdf_url')
+                    .eq('id', 1)
+                    .single();
+                
+                if (error) throw error;
+                if (data && data.pdf_url) {
+                    loadPdf(data.pdf_url);
+                }
+            } catch (e) {
+                console.error("설정 로드 실패:", e.message);
+            }
+        }
+
         function subscribeRealtime() {
+            // 질문 테이블 실시간 구독
             supabaseClient
-                .channel('schema-db-changes')
+                .channel('questions-db-changes')
                 .on('postgres_changes', { event: '*', schema: 'public', table: 'questions' }, () => {
                     fetchQuestions();
                 })
                 .subscribe();
+
+            // 🛠️ 설정 테이블 실시간 구독 추가 (관리자가 DB 바꾸면 청중 스크린 즉시 변경)
+            supabaseClient
+                .channel('settings-db-changes')
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'settings' }, () => {
+                    fetchSettings();
+                })
+                .subscribe();
         }
 
+        // 최초 실행
         fetchQuestions();
+        fetchSettings();
         subscribeRealtime();
-
-        const DEFAULT_PDF = './presentation.pdf'; 
-        loadPdf(DEFAULT_PDF);
     </script>
 </body>
 </html>
