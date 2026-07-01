@@ -131,25 +131,25 @@
             charCounter.textContent = `${textareaContent.value.length} / 300자`;
         });
 
-        // 🛠️ 2번 요구사항: 데이터 로딩 속도 최적화 (.order('id', { ascending: true })를 추가하여 서버 단위 정렬)
+        // 질문 목록 최적화 불러오기 (서버 원격 정렬)
         async function fetchQuestions() {
             try {
                 const { data, error } = await supabaseClient
                     .from('questions')
                     .select('*')
-                    .order('id', { ascending: true }); // 가장 오래된 데이터 순으로 1차 정렬하여 가져옴
+                    .order('id', { ascending: true });
 
                 if (error) throw error;
                 
-                // 🛠️ 1번 요구사항: 데이터베이스 고유 id 대신 가상 순번(1, 2, 3...) 부여하기
+                // 1번 수정사항: 1부터 순차적으로 올라가는 번호 생성
                 const processedData = data.map((item, index) => {
                     return {
                         ...item,
-                        displayNumber: index + 1 // 등록 시간 순서대로 1번부터 고유 번호 매김
+                        displayNumber: index + 1
                     };
                 });
 
-                // 최종 화면 정렬: 답변 완료 여부에 따라 나누고, 각각의 안에서는 최신 번호(displayNumber)가 위로 오도록 정렬
+                // 답변 여부 그룹화 및 최신순 내부 정렬
                 const sortedData = processedData.sort((a, b) => {
                     const isCompleteA = !!a.complete || (!!a.answer && String(a.answer).trim() !== '');
                     const isCompleteB = !!b.complete || (!!b.answer && String(b.answer).trim() !== '');
@@ -205,7 +205,6 @@
                         </div>`;
                 }
 
-                // 🛠️ q.id 대신 새롭게 부여된 순차 번호 q.displayNumber를 화면에 출력
                 return `
                     <div class="p-4 rounded-xl border ${boxStyles} transition-all duration-300">
                         <div class="flex justify-between items-center mb-2">
@@ -242,7 +241,7 @@
             return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
         }
 
-        // 🛠️ 3번 요구사항: 구글 드라이브 및 PDF 전용 절대 주소 뷰어 최적화 함수
+        // 🛠️ 구글 드라이브 전용 임베드 URL 변환 및 출력 스크립트
         function loadPdf(url) {
             if(!url || url === currentLoadedUrl) return;
             currentLoadedUrl = url;
@@ -252,20 +251,22 @@
 
             let finalUrl = url;
 
-            // 만약 구글 드라이브 공유 링크(view?usp=sharing 등) 형태라면 뷰어용 주소(/preview)로 자동 인지 전환
-            if (url.includes('drive.google.com') && url.includes('/view')) {
-                finalUrl = url.replace(/\/view.*/, '/preview');
+            // 구글 드라이브 일반 공유 주소를 인쇄/다운로드 툴바가 포함된 공식 미리보기(/preview)로 치환합니다.
+            if (url.includes('drive.google.com')) {
+                if (url.includes('/view')) {
+                    finalUrl = url.replace(/\/view.*/, '/preview');
+                } else if (url.includes('/edit')) {
+                    finalUrl = url.replace(/\/edit.*/, '/preview');
+                } else if (!url.endsWith('/preview')) {
+                    finalUrl = url.trim() + (url.endsWith('/') ? 'preview' : '/preview');
+                }
             } 
-            // 일반 상대 경로 및 다른 형태의 절대 경로 처리
+            // 상대경로 주소일 경우 구글문서 안전 뷰어 결합
             else if (url.startsWith('.')) {
-                finalUrl = window.location.origin + window.location.pathname.replace('index.html', '') + url.replace('./', '');
-                // 일반 pdf 상대 주소의 경우 완벽한 구글 gview 툴바를 결합하여 인쇄/다운로드 주소 제공
-                finalUrl = `https://docs.google.com/gview?url=${encodeURIComponent(finalUrl)}&embedded=true`;
-            } else if (!url.includes('drive.google.com')) {
-                // 구글 드라이브 주소가 아닌 일반 웹상의 PDF 절대 경로일 때도 구글 문서 뷰어를 안전하게 결합
-                finalUrl = `https://docs.google.com/gview?url=${encodeURIComponent(url)}&embedded=true`;
+                let absoluteUrl = window.location.origin + window.location.pathname.replace('index.html', '') + url.replace('./', '');
+                finalUrl = `https://docs.google.com/gview?url=${encodeURIComponent(absoluteUrl)}&embedded=true`;
             }
-            
+
             pdfViewer.src = finalUrl;
         }
 
@@ -302,6 +303,7 @@
                 .subscribe();
         }
 
+        // 최적화 순서에 맞춘 데이터 초기 호출
         fetchQuestions();
         fetchSettings();
         subscribeRealtime();
