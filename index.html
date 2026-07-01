@@ -6,7 +6,7 @@
     <title>멘토링 스페이스</title>
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" />
+    <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" />
     <style>
         body { font-family: "Pretendard Variable", Pretendard, sans-serif; }
     </style>
@@ -130,17 +130,13 @@
         // ================= [ 핵심 기능: 페이지 탭 전환 ] =================
         function switchPage(target) {
             if (target === 'presentation') {
-                // 발표자료 활성화
                 pagePresentation.classList.remove('hidden');
                 pageQna.classList.add('hidden');
-                // 버튼 스타일 전환
                 menuPresentation.className = "w-full flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg bg-blue-50 text-blue-600 transition cursor-pointer group";
                 menuQna.className = "w-full flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg text-gray-600 hover:bg-gray-50 transition cursor-pointer group";
             } else if (target === 'qna') {
-                // 질의응답 활성화
                 pagePresentation.classList.add('hidden');
                 pageQna.classList.remove('hidden');
-                // 버튼 스타일 전환
                 menuPresentation.className = "w-full flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg text-gray-600 hover:bg-gray-50 transition cursor-pointer group";
                 menuQna.className = "w-full flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg bg-blue-50 text-blue-600 transition cursor-pointer group";
             }
@@ -170,6 +166,7 @@
             }
         }
 
+        /* [보안 및 이스케이프 반영 렌더링] */
         function renderQuestions(questions) {
             sidebarCount.textContent = questions.length;
 
@@ -220,12 +217,20 @@
             return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
         }
 
-        // ================= [ PDF 실시간 연동 로직 ] =================
+        // ================= [ PDF 실시간 연동 로직 (모바일 뷰어 우회 추가) ] =================
         function loadPdf(url) {
             if(!url) return;
             pdfPlaceholder.classList.add('hidden');
             pdfViewer.classList.remove('hidden');
-            pdfViewer.src = url;
+
+            let fullUrl = url;
+            // 만약 주소가 './presentation.pdf' 같이 상대경로라면 구글 서버가 인식할 수 있도록 절대 도메인 주소로 가공합니다.
+            if (url.startsWith('.')) {
+                fullUrl = window.location.origin + window.location.pathname.replace('index.html', '') + url.replace('./', '');
+            }
+
+            // 구글 gview 임베딩 링크를 사용하여 모바일 브라우저의 강제 다운로드 작동을 방지합니다.
+            pdfViewer.src = `https://docs.google.com/gview?url=${encodeURIComponent(fullUrl)}&embedded=true`;
         }
 
         updatePdfBtn.addEventListener('click', () => {
@@ -250,17 +255,14 @@
         fetchQuestions();
         subscribeRealtime();
 
-        // 🛠️ [사전 로드 기능 적용 완료] 
-        // 1. 같은 폴더에 넣어둔 presentation.pdf를 기본 경로로 설정합니다.
+        // [사전 탑재 기본 PDF 정의]
         const DEFAULT_PDF = './presentation.pdf'; 
 
-        // 2. 브라우저 저장 세션(localStorage) 확인 후 우선 로드
         const savedPdf = localStorage.getItem('current_presentation_pdf');
         if (savedPdf) {
             pdfUrlInput.value = savedPdf;
             loadPdf(savedPdf);
         } else {
-            // 저장된 임시 세션이 없다면 사전에 폴더에 같이 올린 기본 PDF를 바로 로드합니다.
             pdfUrlInput.value = DEFAULT_PDF;
             loadPdf(DEFAULT_PDF);
         }
