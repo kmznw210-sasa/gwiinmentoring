@@ -2,13 +2,16 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>라이브 스페이스</title>
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" />
     <style>
         body { font-family: "Pretendard Variable", Pretendard, sans-serif; }
+        /* 모바일 스크롤 최적화 */
+        .pdf-scroll-container::-webkit-scrollbar { display: none; }
     </style>
 </head>
 <body class="bg-gray-50 text-gray-800 min-h-screen flex flex-col md:flex-row">
@@ -70,31 +73,28 @@
             </div>
         </section>
 
-        <section id="pagePresentation" class="flex-1 flex flex-col p-4 md:p-6 hidden">
-            <div class="mb-4 flex justify-between items-center">
+        <section id="pagePresentation" class="flex-1 flex flex-col p-4 md:p-6 hidden h-full overflow-hidden">
+            <div class="mb-4 flex justify-between items-center shrink-0">
                 <div>
                     <h2 class="text-xl font-bold text-gray-900">📊 발표자료 스크린</h2>
-                    <p class="text-xs text-gray-500 mt-1">공유된 발표자료를 확인하는 페이지입니다.</p>
+                    <p class="text-xs text-gray-500 mt-1">터치하여 아래로 스크롤하며 볼 수 있습니다.</p>
                 </div>
-                <span class="hidden md:inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700 animate-pulse">LIVE 동기화 중</span>
+                <a id="pdfDownloadLink" href="#" target="_blank" class="inline-flex items-center bg-gray-900 text-white text-xs px-2.5 py-1.5 rounded-lg font-medium shadow-xs">원본 받기</a>
             </div>
             
-            <div class="flex-1 bg-white border border-gray-200 rounded-xl shadow-xs overflow-hidden flex items-center justify-center p-3 relative min-h-[450px]">
-                <div id="pdfPlaceholder" class="text-center p-4">
-                    <p class="text-gray-400 text-sm font-medium">등록된 발표자료가 없습니다.</p>
+            <div class="flex-1 bg-gray-100 border border-gray-200 rounded-xl overflow-y-auto pdf-scroll-container p-2 flex flex-col gap-3 items-center" id="pdfViewerContainer">
+                <div id="pdfPlaceholder" class="text-center p-8 my-auto">
+                    <p class="text-gray-400 text-sm font-medium" id="pdfStatusText">등록된 발표자료가 없습니다.</p>
                 </div>
-                <object id="pdfViewer" type="application/pdf" class="w-full h-full rounded-lg border-0 hidden">
-                    <div class="text-center p-4">
-                        <p class="text-gray-500 text-sm mb-2">이 브라우저 환경에서는 자료를 바로 열 수 없습니다.</p>
-                        <a id="pdfDownloadLink" href="#" target="_blank" class="inline-block bg-blue-600 text-white text-xs px-3 py-2 rounded font-medium">새 창에서 PDF 보기</a>
-                    </div>
-                </object>
-            </div>
+                </div>
         </section>
 
     </main>
 
     <script>
+        // PDF.js 워커 경로 설정 필수
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
         const SUPABASE_URL = 'https://oknuuepfxtaavxnareat.supabase.co';
         const SUPABASE_KEY = 'sb_publishable_IpkgAw7waQDuoU_yhl6Lvg_HAtOTvdP';
         const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -110,8 +110,9 @@
         const textareaContent = document.getElementById('content');
         const charCounter = document.getElementById('charCounter');
         
-        const pdfViewer = document.getElementById('pdfViewer');
+        const pdfViewerContainer = document.getElementById('pdfViewerContainer');
         const pdfPlaceholder = document.getElementById('pdfPlaceholder');
+        const pdfStatusText = document.getElementById('pdfStatusText');
         const pdfDownloadLink = document.getElementById('pdfDownloadLink');
 
         let currentLoadedUrl = "";
@@ -137,17 +138,15 @@
             charCounter.textContent = `${textareaContent.value.length} / 300자`;
         });
 
-        // 🚀 초기 로딩 최적화: 서버 측 정렬 및 로드 속도 단축
         async function fetchQuestions() {
             try {
                 const { data, error } = await supabaseClient
                     .from('questions')
                     .select('*')
-                    .order('id', { ascending: true }); // 등록 시간 기준으로 기본 일차 정렬
+                    .order('id', { ascending: true });
 
                 if (error) throw error;
                 
-                // 🚀 가상 정렬 매핑: 뒤죽박죽인 id 값 대신 1번부터 이쁘게 카운팅
                 const processedData = data.map((item, index) => {
                     return {
                         ...item,
@@ -155,7 +154,6 @@
                     };
                 });
 
-                // 답변 완료 카드가 아래로 밀리도록 하고, 각각 최신 순번대로 최종 배치
                 const sortedData = processedData.sort((a, b) => {
                     const isCompleteA = !!a.complete || (!!a.answer && String(a.answer).trim() !== '');
                     const isCompleteB = !!b.complete || (!!b.answer && String(b.answer).trim() !== '');
@@ -211,7 +209,6 @@
                         </div>`;
                 }
 
-                // 가상 순번인 q.displayNumber를 출력합니다.
                 return `
                     <div class="p-4 rounded-xl border ${boxStyles} transition-all duration-300">
                         <div class="flex justify-between items-center mb-2">
@@ -248,24 +245,72 @@
             return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
         }
 
-        // PDF 뷰어 렌더러 함수
-        function loadPdf(url) {
+        // 🚀 모바일용 초강력 PDF.js 엔진 기반 렌더러 함수
+        async function loadPdf(url) {
             if(!url || url === currentLoadedUrl) return;
             currentLoadedUrl = url;
             
-            pdfPlaceholder.classList.add('hidden');
-            pdfViewer.classList.remove('hidden');
-
+            // 주소 보정 연산
             let fullUrl = url;
             if (url.startsWith('.')) {
-                fullUrl = window.location.origin + window.location.pathname.replace('index.html', '') + url.replace('./', '');
+                const basePath = window.location.origin + window.location.pathname;
+                const dirPath = basePath.substring(0, basePath.lastIndexOf('/') + 1);
+                fullUrl = dirPath + url.replace('./', '');
+            } else if (!url.startsWith('http')) {
+                const basePath = window.location.origin + window.location.pathname;
+                const dirPath = basePath.substring(0, basePath.lastIndexOf('/') + 1);
+                fullUrl = dirPath + url;
             }
             
-            pdfViewer.data = fullUrl;
-            pdfDownloadLink.href = fullUrl;
+            const finalUrl = fullUrl + '?v=' + new Date().getTime();
+            pdfDownloadLink.href = finalUrl;
+
+            // 로딩 상태 표시
+            pdfPlaceholder.classList.remove('hidden');
+            pdfStatusText.textContent = "모바일용 PDF 렌더링 엔진 가동 중...";
+
+            // 기존에 렌더링된 canvas 목록 초기화 (placeholder 제외)
+            const elementsToRemove = pdfViewerContainer.querySelectorAll('canvas');
+            elementsToRemove.forEach(el => el.remove());
+
+            try {
+                // PDF 불러오기
+                const loadingTask = pdfjsLib.getDocument(finalUrl);
+                const pdf = await loadingTask.promise;
+                
+                pdfPlaceholder.classList.add('hidden'); // 성공 시 플레이스홀더 숨김
+
+                // 모든 페이지 순차적으로 캔버스 배열 생성 후 삽입
+                for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+                    const page = await pdf.getPage(pageNum);
+                    
+                    // 모바일 화면 폭에 맞춰 자동 스케일링 계산
+                    const containerWidth = pdfViewerContainer.clientWidth - 16; // 패딩 제외 값
+                    const viewport = page.getViewport({ scale: 1.0 });
+                    const scale = containerWidth / viewport.width;
+                    const scaledViewport = page.getViewport({ scale: Math.min(scale, 2.0) }); // 최대 2배 선명도 제한
+
+                    // HTML5 Canvas 생성 및 설정
+                    const canvas = document.createElement('canvas');
+                    const context = canvas.getContext('2d');
+                    canvas.height = scaledViewport.height;
+                    canvas.width = scaledViewport.width;
+                    canvas.className = "w-full max-w-full rounded-lg shadow-sm bg-white mb-1 shrink-0";
+
+                    pdfViewerContainer.appendChild(canvas);
+
+                    // 캔버스에 PDF 드로잉
+                    await page.render({
+                        canvasContext: context,
+                        viewport: scaledViewport
+                    }).promise;
+                }
+            } catch (error) {
+                console.error("PDF.js 엔진 구동 실패:", error);
+                pdfStatusText.innerHTML = `모바일 뷰어 실패.<br><a href="${finalUrl}" target="_blank" class="text-blue-600 underline font-bold mt-2 inline-block">여기를 눌러 PDF 직접 열기</a>`;
+            }
         }
 
-        // 🚀 PDF 핵심 안전장치: 구글 드라이브 주소 차단을 피하기 위해 깃허브 `./presentation.pdf` 강제 고정
         async function fetchSettings() {
             try {
                 const { data, error } = await supabaseClient
@@ -276,7 +321,6 @@
                 
                 if (error) throw error;
                 
-                // 구글 드라이브 주소가 기입되어 있거나 공백인 경우, 구글의 프레임 제한 정책 우회를 위해 깃허브 로컬 파일 최우선 적용
                 if (data && data.pdf_url && data.pdf_url.startsWith('http') && !data.pdf_url.includes('drive.google.com')) {
                     loadPdf(data.pdf_url);
                 } else {
