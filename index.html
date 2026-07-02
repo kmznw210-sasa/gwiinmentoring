@@ -82,11 +82,11 @@
     </main>
 
     <script>
-        // Supabase REST API 직접 접속 주소 및 키 세팅
+        // Supabase REST API 설정
         const SUPABASE_REST_URL = 'https://oknuuepfxtaavxnareat.supabase.co/rest/v1';
         const SUPABASE_KEY = 'sb_publishable_IpkgAw7waQDuoU_yhl6Lvg_HAtOTvdP';
 
-        // 🔗 사용자가 지정한 발표 자료 이미지 파일 명시
+        // 🔗 사용자가 지정해 둔 발표 이미지 파일명 적용
         const presentationImages = ['slide1.jpg'];
 
         const menuPresentation = document.getElementById('menuPresentation');
@@ -102,7 +102,7 @@
         
         const imageViewerContainer = document.getElementById('imageViewerContainer');
 
-        // 탭 메뉴 전환 스위치
+        // 탭 메뉴 전환 기능
         function switchPage(target) {
             if (target === 'presentation') {
                 pagePresentation.classList.remove('hidden');
@@ -124,7 +124,7 @@
             charCounter.textContent = `${textareaContent.value.length} / 300자`;
         });
 
-        // 🚀 라이브러리 우회형 고성능 질문 데이터 수집 (CORS/Fetch 에러 완벽 해결)
+        // 🚀 표준 Fetch API 기반 질문 실시간 로더 (Fail to fetch 에러 방지)
         async function fetchQuestions() {
             try {
                 const response = await fetch(`${SUPABASE_REST_URL}/questions?order=id.asc`, {
@@ -136,7 +136,7 @@
                     }
                 });
 
-                if (!response.ok) throw new Error(`HTTP 에러 발생: ${response.status}`);
+                if (!response.ok) throw new Error(`HTTP 에러: ${response.status}`);
                 const data = await response.json();
                 
                 const processedData = data.map((item, index) => ({
@@ -153,8 +153,8 @@
 
                 renderQuestions(sortedData);
             } catch (error) {
-                console.error('Fetch 로드 실패:', error.message);
-                questionList.innerHTML = `<p class="text-center text-sm text-red-500 py-8">질문을 동기화하는 중입니다. 네트워크 상태를 확인하세요.</p>`;
+                console.error('질문 로드 실패:', error.message);
+                questionList.innerHTML = `<p class="text-center text-sm text-red-500 py-8">질문을 동기화하는 중입니다. 네트워크를 확인해 주세요.</p>`;
             }
         }
 
@@ -197,7 +197,7 @@
             }).join('');
         }
 
-        // 새 질문 등록 연동 (Fetch API)
+        // 질문 등록 연동 (Fetch API)
         questionForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             const content = textareaContent.value.trim();
@@ -217,7 +217,7 @@
                 
                 questionForm.reset();
                 charCounter.textContent = '0 / 300자';
-                fetchQuestions(); // 즉시 리프레시
+                fetchQuestions(); 
             } catch (error) {
                 alert('질문 등록에 실패했습니다. 다시 시도해 주세요.');
             }
@@ -228,27 +228,27 @@
             return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
         }
 
-        // 📊 모바일/PC 100% 보장 이미지 피드 빌더
+        // 📊 발표 이미지 로더 (기기를 타지 않는 100% 정상 작동 방식)
         function loadPresentationImages() {
             imageViewerContainer.innerHTML = ''; 
 
             presentationImages.forEach(imgName => {
                 const imgTag = document.createElement('img');
-                // 브라우저 강제 캐시 파괴 파라미터 바인딩
+                // 캐시 방지 파라미터 적용
                 imgTag.src = `./${imgName}?v=${new Date().getTime()}`;
                 imgTag.className = "w-full max-w-2xl rounded-lg shadow-xs border border-gray-200 bg-white object-contain shrink-0";
                 imgTag.alt = "발표 자료";
                 
                 imgTag.onerror = () => {
                     imgTag.style.display = 'none';
-                    imageViewerContainer.innerHTML = `<p class="text-gray-400 text-sm font-medium py-12">slide1.jpg 파일을 찾을 수 없습니다.<br>GitHub 경로를 다시 확인해주세요.</p>`;
+                    imageViewerContainer.innerHTML = `<p class="text-gray-400 text-sm font-medium py-12">slide1.jpg 이미지 파일을 불러올 수 없습니다.<br>GitHub 경로에 파일이 올바르게 추가되었는지 확인해 주세요.</p>`;
                 };
 
                 imageViewerContainer.appendChild(imgTag);
             });
         }
 
-        // 초기화 가동 및 안정적인 3초 주기 자동 동기화(폴링) 세팅
+        // 초기 구동 및 3초 주기 자동 동기화 세팅
         fetchQuestions();
         loadPresentationImages();
         setInterval(fetchQuestions, 3000); 
