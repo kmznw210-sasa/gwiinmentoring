@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>라이브 스페이스</title>
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" />
     <style>
         body { font-family: "Pretendard Variable", Pretendard, sans-serif; }
@@ -21,7 +20,6 @@
                 </h1>
                 <p class="text-[11px] text-gray-400 mt-0.5">실시간 동기화 스페이스</p>
             </div>
-            <span class="inline-flex md:hidden items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-green-100 text-green-700 animate-pulse">LIVE</span>
         </div>
 
         <nav class="p-3 space-y-1 flex-1">
@@ -54,8 +52,7 @@
                                 class="w-full text-sm px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none resize-none"></textarea>
                             <div class="text-right text-[11px] text-gray-400 mt-1" id="charCounter">0 / 300자</div>
                         </div>
-                        <button type="submit" 
-                            class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium text-sm py-2.5 px-4 rounded-lg transition duration-200 cursor-pointer shadow-xs">
+                        <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium text-sm py-2.5 px-4 rounded-lg transition duration-200 cursor-pointer shadow-xs">
                             질문 등록하기
                         </button>
                     </form>
@@ -70,34 +67,27 @@
             </div>
         </section>
 
-        <section id="pagePresentation" class="flex-1 flex flex-col p-4 md:p-6 hidden">
-            <div class="mb-4 flex justify-between items-center">
+        <section id="pagePresentation" class="flex-1 flex flex-col p-4 md:p-6 hidden h-full overflow-hidden">
+            <div class="mb-4 flex justify-between items-center shrink-0">
                 <div>
                     <h2 class="text-xl font-bold text-gray-900">📊 발표자료 스크린</h2>
-                    <p class="text-xs text-gray-500 mt-1">공유된 발표자료를 확인하는 페이지입니다.</p>
+                    <p class="text-xs text-gray-500 mt-1">모바일과 PC 어디서나 스크롤하며 볼 수 있습니다.</p>
                 </div>
-                <span class="hidden md:inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700 animate-pulse">LIVE 동기화 중</span>
             </div>
             
-            <div class="flex-1 bg-white border border-gray-200 rounded-xl shadow-xs overflow-hidden flex items-center justify-center p-3 relative min-h-[450px] h-[70vh] md:h-full">
-                <div id="pdfPlaceholder" class="text-center p-4">
-                    <p class="text-gray-400 text-sm font-medium">등록된 발표자료가 없습니다.</p>
+            <div id="imageViewerContainer" class="flex-1 bg-gray-100 border border-gray-200 rounded-xl overflow-y-auto p-2 flex flex-col gap-4 items-center">
                 </div>
-                <object id="pdfViewer" type="application/pdf" class="w-full h-full min-h-full rounded-lg border-0 hidden" style="display:block; min-height: 100%;">
-                    <div class="text-center p-4">
-                        <p class="text-gray-500 text-sm mb-2">이 브라우저 환경에서는 자료를 바로 열 수 없습니다.</p>
-                        <a id="pdfDownloadLink" href="#" target="_blank" class="inline-block bg-blue-600 text-white text-xs px-3 py-2 rounded font-medium">새 창에서 PDF 보기</a>
-                    </div>
-                </object>
-            </div>
         </section>
 
     </main>
 
     <script>
-        const SUPABASE_URL = 'https://oknuuepfxtaavxnareat.supabase.co';
+        // Supabase REST API 직접 접속 주소 및 키 세팅
+        const SUPABASE_REST_URL = 'https://oknuuepfxtaavxnareat.supabase.co/rest/v1';
         const SUPABASE_KEY = 'sb_publishable_IpkgAw7waQDuoU_yhl6Lvg_HAtOTvdP';
-        const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        // 🔗 사용자가 지정한 발표 자료 이미지 파일 명시
+        const presentationImages = ['slide1.jpg'];
 
         const menuPresentation = document.getElementById('menuPresentation');
         const menuQna = document.getElementById('menuQna');
@@ -110,23 +100,20 @@
         const textareaContent = document.getElementById('content');
         const charCounter = document.getElementById('charCounter');
         
-        const pdfViewer = document.getElementById('pdfViewer');
-        const pdfPlaceholder = document.getElementById('pdfPlaceholder');
-        const pdfDownloadLink = document.getElementById('pdfDownloadLink');
+        const imageViewerContainer = document.getElementById('imageViewerContainer');
 
-        let currentLoadedUrl = "";
-
+        // 탭 메뉴 전환 스위치
         function switchPage(target) {
             if (target === 'presentation') {
                 pagePresentation.classList.remove('hidden');
                 pageQna.classList.add('hidden');
-                menuPresentation.className = "w-full flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg bg-blue-50 text-blue-600 transition duration-150 cursor-pointer group";
-                menuQna.className = "w-full flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg text-gray-600 hover:bg-gray-50 transition duration-150 cursor-pointer group";
+                menuPresentation.className = "w-full flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg bg-blue-50 text-blue-600 cursor-pointer";
+                menuQna.className = "w-full flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg text-gray-600 hover:bg-gray-50 cursor-pointer";
             } else if (target === 'qna') {
                 pagePresentation.classList.add('hidden');
                 pageQna.classList.remove('hidden');
-                menuPresentation.className = "w-full flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg text-gray-600 hover:bg-gray-50 transition duration-150 cursor-pointer group";
-                menuQna.className = "w-full flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg bg-blue-50 text-blue-600 transition duration-150 cursor-pointer group";
+                menuPresentation.className = "w-full flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg text-gray-600 hover:bg-gray-50 cursor-pointer";
+                menuQna.className = "w-full flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg bg-blue-50 text-blue-600 cursor-pointer";
             }
         }
 
@@ -137,36 +124,37 @@
             charCounter.textContent = `${textareaContent.value.length} / 300자`;
         });
 
+        // 🚀 라이브러리 우회형 고성능 질문 데이터 수집 (CORS/Fetch 에러 완벽 해결)
         async function fetchQuestions() {
             try {
-                const { data, error } = await supabaseClient
-                    .from('questions')
-                    .select('*')
-                    .order('id', { ascending: true });
-
-                if (error) throw error;
-                
-                const processedData = data.map((item, index) => {
-                    return {
-                        ...item,
-                        displayNumber: index + 1
-                    };
+                const response = await fetch(`${SUPABASE_REST_URL}/questions?order=id.asc`, {
+                    method: 'GET',
+                    headers: {
+                        'apikey': SUPABASE_KEY,
+                        'Authorization': `Bearer ${SUPABASE_KEY}`,
+                        'Content-Type': 'application/json'
+                    }
                 });
+
+                if (!response.ok) throw new Error(`HTTP 에러 발생: ${response.status}`);
+                const data = await response.json();
+                
+                const processedData = data.map((item, index) => ({
+                    ...item,
+                    displayNumber: index + 1
+                }));
 
                 const sortedData = processedData.sort((a, b) => {
                     const isCompleteA = !!a.complete || (!!a.answer && String(a.answer).trim() !== '');
                     const isCompleteB = !!b.complete || (!!b.answer && String(b.answer).trim() !== '');
-
-                    if (isCompleteA !== isCompleteB) {
-                        return isCompleteA ? 1 : -1; 
-                    }
+                    if (isCompleteA !== isCompleteB) return isCompleteA ? 1 : -1; 
                     return b.displayNumber - a.displayNumber; 
                 });
 
                 renderQuestions(sortedData);
             } catch (error) {
-                console.error('로드 실패:', error.message);
-                questionList.innerHTML = `<p class="text-center text-sm text-red-500 py-8">질문을 불러오지 못했습니다.<br>오류내용: ${error.message}</p>`;
+                console.error('Fetch 로드 실패:', error.message);
+                questionList.innerHTML = `<p class="text-center text-sm text-red-500 py-8">질문을 동기화하는 중입니다. 네트워크 상태를 확인하세요.</p>`;
             }
         }
 
@@ -184,58 +172,54 @@
                 });
                 
                 const isEffectivelyComplete = !!q.complete || (!!q.answer && String(q.answer).trim() !== '');
-
-                const boxStyles = isEffectivelyComplete
-                    ? 'border-green-200 bg-green-50/20 shadow-[0_1px_3px_rgba(34,197,94,0.05)]'
-                    : 'border-gray-200 bg-white shadow-[0_1px_2px_rgba(0,0,0,0.03)]';
-
+                const boxStyles = isEffectivelyComplete ? 'border-green-200 bg-green-50/20' : 'border-gray-200 bg-white';
                 const statusBadge = isEffectivelyComplete
                     ? `<span class="text-[10px] bg-green-600 text-white px-2 py-0.5 rounded-full font-semibold">✅ 답변 완료</span>`
                     : `<span class="text-[10px] bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full font-semibold">💡 답변 대기</span>`;
 
-                let answerHTML = '';
-                if (isEffectivelyComplete) {
-                    answerHTML = `
-                        <div class="mt-2.5 p-3 bg-green-50/60 border-l-2 border-green-500 rounded-r-lg">
-                            <p class="text-gray-700 text-xs md:text-sm leading-relaxed font-medium">
-                                ${q.answer ? q.answer : '🙌 현장에서 답변이 완료된 질문입니다.'}
-                            </p>
-                        </div>`;
-                } else {
-                    answerHTML = `
-                        <div class="mt-2.5 p-2 bg-gray-50/80 rounded border border-dashed border-gray-200 text-center">
-                            <p class="text-[11px] text-gray-400">💡 답변을 기다리고 있습니다.</p>
-                        </div>`;
-                }
+                let answerHTML = isEffectivelyComplete
+                    ? `<div class="mt-2.5 p-3 bg-green-50/60 border-l-2 border-green-500 rounded-r-lg"><p class="text-gray-700 text-xs md:text-sm font-medium">${q.answer ? q.answer : '🙌 현장에서 답변이 완료된 질문입니다.'}</p></div>`
+                    : `<div class="mt-2.5 p-2 bg-gray-50/80 rounded border border-dashed border-gray-200 text-center"><p class="text-[11px] text-gray-400">💡 답변을 기다리고 있습니다.</p></div>`;
 
                 return `
-                    <div class="p-4 rounded-xl border ${boxStyles} transition-all duration-300">
+                    <div class="p-4 rounded-xl border ${boxStyles}">
                         <div class="flex justify-between items-center mb-2">
                             <div class="flex items-center gap-2">
                                 <span class="text-xs font-bold text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded">#${q.displayNumber}</span>
                                 <span class="text-[11px] text-gray-400">${date}</span>
                             </div>
-                            <div class="flex items-center gap-2">
-                                ${statusBadge}
-                            </div>
+                            ${statusBadge}
                         </div>
-                        <p class="text-gray-800 text-sm md:text-base font-normal whitespace-pre-wrap leading-relaxed">${escapeHtml(q.content)}</p>
+                        <p class="text-gray-800 text-sm md:text-base font-normal whitespace-pre-wrap">${escapeHtml(q.content)}</p>
                         ${answerHTML}
                     </div>
                 `;
             }).join('');
         }
 
+        // 새 질문 등록 연동 (Fetch API)
         questionForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             const content = textareaContent.value.trim();
             try {
-                const { error } = await supabaseClient.from('questions').insert([{ content }]);
-                if (error) throw error;
+                const response = await fetch(`${SUPABASE_REST_URL}/questions`, {
+                    method: 'POST',
+                    headers: {
+                        'apikey': SUPABASE_KEY,
+                        'Authorization': `Bearer ${SUPABASE_KEY}`,
+                        'Content-Type': 'application/json',
+                        'Prefer': 'return=representation'
+                    },
+                    body: JSON.stringify({ content })
+                });
+
+                if (!response.ok) throw new Error('등록 실패');
+                
                 questionForm.reset();
                 charCounter.textContent = '0 / 300자';
+                fetchQuestions(); // 즉시 리프레시
             } catch (error) {
-                alert('질문 등록 실패: ' + error.message);
+                alert('질문 등록에 실패했습니다. 다시 시도해 주세요.');
             }
         });
 
@@ -244,64 +228,30 @@
             return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
         }
 
-        // PDF 뷰어 렌더러 함수
-        function loadPdf(url) {
-            if(!url || url === currentLoadedUrl) return;
-            currentLoadedUrl = url;
-            
-            pdfPlaceholder.classList.add('hidden');
-            pdfViewer.classList.remove('hidden');
+        // 📊 모바일/PC 100% 보장 이미지 피드 빌더
+        function loadPresentationImages() {
+            imageViewerContainer.innerHTML = ''; 
 
-            let fullUrl = url;
-            if (url.startsWith('.')) {
-                // GitHub Pages 호환성 보장을 위한 절대 경로 명시화
-                fullUrl = window.location.origin + window.location.pathname.replace('index.html', '') + url.replace('./', '');
-            }
-            
-            pdfViewer.data = fullUrl;
-            pdfDownloadLink.href = fullUrl;
-        }
-
-        async function fetchSettings() {
-            try {
-                const { data, error } = await supabaseClient
-                    .from('settings')
-                    .select('pdf_url')
-                    .eq('id', 1)
-                    .single();
+            presentationImages.forEach(imgName => {
+                const imgTag = document.createElement('img');
+                // 브라우저 강제 캐시 파괴 파라미터 바인딩
+                imgTag.src = `./${imgName}?v=${new Date().getTime()}`;
+                imgTag.className = "w-full max-w-2xl rounded-lg shadow-xs border border-gray-200 bg-white object-contain shrink-0";
+                imgTag.alt = "발표 자료";
                 
-                if (error) throw error;
-                
-                if (data && data.pdf_url && data.pdf_url.startsWith('http') && !data.pdf_url.includes('drive.google.com')) {
-                    loadPdf(data.pdf_url);
-                } else {
-                    loadPdf('./presentation.pdf');
-                }
-            } catch (e) {
-                console.error("설정 데이터 연동 우회 -> 로컬 파일 바인딩 완료");
-                loadPdf('./presentation.pdf');
-            }
+                imgTag.onerror = () => {
+                    imgTag.style.display = 'none';
+                    imageViewerContainer.innerHTML = `<p class="text-gray-400 text-sm font-medium py-12">slide1.jpg 파일을 찾을 수 없습니다.<br>GitHub 경로를 다시 확인해주세요.</p>`;
+                };
+
+                imageViewerContainer.appendChild(imgTag);
+            });
         }
 
-        function subscribeRealtime() {
-            supabaseClient
-                .channel('questions-db-changes')
-                .on('postgres_changes', { event: '*', schema: 'public', table: 'questions' }, () => {
-                    fetchQuestions();
-                })
-                .subscribe();
-
-            supabaseClient
-                .channel('settings-db-changes')
-                .on('postgres_changes', { event: '*', schema: 'public', table: 'settings' }, () => {
-                    fetchSettings();
-                })
-                .subscribe();
-        }
-
+        // 초기화 가동 및 안정적인 3초 주기 자동 동기화(폴링) 세팅
         fetchQuestions();
-        fetchSettings();
-        subscribeRealtime();
+        loadPresentationImages();
+        setInterval(fetchQuestions, 3000); 
     </script>
 </body>
 </html>
